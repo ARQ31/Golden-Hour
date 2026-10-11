@@ -213,7 +213,7 @@ flowchart LR
 
 ### Input dan Kanal
 - **Dukungan tangkapan layar.** Tambahkan OCR atau pakai model multimodal agar gambar chat bisa dianalisis.
-- **Integrasi WhatsApp/Telegram** lewat API Langflow, karena kanal ini paling sering dipakai penipu dan korban.
+- **Integrasi Telegram** lewat API Langflow, karena kanal ini paling sering dipakai penipu dan korban.
 - **Output suara (*text-to-speech*)** untuk pengguna lansia yang kesulitan membaca teks panjang.
 
 ### Scenario Game
