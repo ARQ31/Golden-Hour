@@ -1,4 +1,4 @@
-# 🛡️ Golden Hour - Scam Buster System
+# Golden Hour - Scam Buster System
 
 **Golden Hour - Scam Buster System** adalah sistem pertolongan pertama dan edukasi untuk menghadapi penipuan online (*online scam*) di Indonesia. Proyek ini terdiri dari dua *flow* **[Langflow](https://www.langflow.org/)** yang menggabungkan **Multi-Agent LLM** dengan **komponen Python deterministik** (tanpa AI).
 
@@ -153,7 +153,7 @@ flowchart LR
 
 ---
 
-## 🚀 Cara Memulai
+## 🚀 Cara Menggunakan
 
 ### Prasyarat
 1. **Langflow** (diuji pada versi **1.12.2**).
