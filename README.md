@@ -11,7 +11,7 @@ Nama *Golden Hour* merujuk pada waktu paling kritis sesaat sebelum atau tepat se
 | File | Fungsi | Pendekatan |
 |---|---|---|
 | `Golden Hour - Scam Check.json` | Memeriksa pesan mencurigakan, memindai tautan/file, lalu memberi analisis risiko atau panduan darurat beserta draf laporan IASC. | Multi-Agent LLM (OpenRouter) + Evidence Scanner (Python, tanpa AI) |
-| `Golden Hour - Scam Scenario Game.json` | Game simulasi *Live Scam Attack* berbasis giliran untuk melatih pengguna mengenali modus penipuan. | 100% Python deterministik, tanpa LLM |
+| `Golden Hour - Scam Scenario Game.json` | Game simulasi *Scam Scenario Game* berbasis giliran untuk melatih pengguna mengenali modus penipuan. | 100% Python deterministik, tanpa LLM |
 
 > Kedua flow diekspor dari **Langflow 1.12.2**.
 
