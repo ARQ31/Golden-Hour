@@ -23,8 +23,13 @@ Nama *Golden Hour* merujuk pada waktu paling kritis sesaat sebelum atau tepat se
 
 ```mermaid
 flowchart TD
-    CI(["Chat Input"]) --> ES["Evidence Scanner (Python, tanpa AI)"]
-    CI --> PT1["Prompt Template: PESAN PENGGUNA + BUKTI"]
+    CI(["Chat Input"]) --> RouterGame{"If-Else (Regex Game / Perintah)"}
+
+    RouterGame -->|"True (Game/Menu)"| RF["Run Flow (Scam Scenario Game)"]
+    RF --> CO_Game(["Chat Output: Game"])
+
+    RouterGame -->|"False (Pemeriksaan)"| ES["Evidence Scanner (Python, tanpa AI)"]
+    RouterGame -->|"False (Pemeriksaan)"| PT1["Prompt Template: PESAN PENGGUNA + BUKTI"]
     ES --> PT1
 
     PT1 --> AA["Agent Analyst (nemotron-3-super-120b)"]
@@ -33,20 +38,30 @@ flowchart TD
     IF -->|"True"| PTE["Prompt Template: PESAN + HASIL ANALISIS AWAL + BUKTI"]
     IF -->|"False"| PTS["Prompt Template: DRAFT JSON + BUKTI"]
 
-    CI --> PTE
-    ES --> PTE
-    ES --> PTS
+    RouterGame -.-> PTE
+    ES -.-> PTE
+    ES -.-> PTS
 
-    PTE --> AEW["Agent Emergency Writer (nemotron-3-ultra-550b)"]
+    Composio["GoogleDocs (Composio Tool)"] -->|"tool"| AEW["Agent Emergency Writer (nemotron-3-ultra-550b)"]
+    PTE --> AEW
     PTS --> ASG["Agent Safety Guard (nemotron-3-ultra-550b)"]
 
-    AEW --> CO1(["Chat Output: Mode Darurat"])
+    AEW --> CO1(["Chat Output: Mode Darurat + Link Docs"])
     ASG --> CO2(["Chat Output: Hasil Pemeriksaan"])
 ```
 
 ### Komponen
 
-#### 1. Evidence Scanner (custom component, tanpa AI)
+#### 1. Router Perintah Awal (If-Else)
+Mendeteksi apakah pesan pengguna merupakan perintah game atau jawaban kuis menggunakan regex cerdas:
+`(?is)(^\s*(menu|mulai|ulang|restart|bank|job|apk|[a-d])\s*[.)]?$|.*\b(ngegame|game|simulasi|kuis)\b.*)`
+- **True** → Langsung diarahkan ke **Run Flow** (Game) tanpa membebani LLM, memastikan latensi instan dan hemat token.
+- **False** → Diteruskan ke alur analisis penipuan (Evidence Scanner & Agent Analyst).
+
+#### 2. Run Flow (Sub-flow Runner)
+Menjalankan alur *Golden Hour - Scam Scenario Game* secara langsung dari dalam flow pemeriksaan, dengan output pesan diteruskan ke **Chat Output Game**.
+
+#### 3. Evidence Scanner (custom component, tanpa AI)
 Memeriksa tautan dan file di pesan pengguna dengan kode biasa. Hasilnya berupa blok teks `BUKTI TEKNIS` dengan tingkat temuan **[TINGGI]**, **[SEDANG]**, atau **[INFO]**.
 
 | Pemeriksaan | Tingkat |
@@ -70,7 +85,7 @@ Desain keamanannya:
 - Maksimal 3 tautan per pesan, batas waktu total 15 detik.
 - "Tidak ada temuan" **tidak pernah** berarti pesan aman.
 
-#### 2. Agent Analyst
+#### 4. Agent Analyst
 - Model: `nvidia/nemotron-3-super-120b-a12b:free` (OpenRouter).
 - Menerima pesan pengguna + `BUKTI TEKNIS`, lalu mengembalikan **JSON saja** dengan kunci:
   - `scam_type`: `fake_call`, `investment_scam`, `job_scam`, `online_shop_scam`, `social_media_scam`, `phishing_apk`, `unknown`, `not_scam`
@@ -79,21 +94,23 @@ Desain keamanannya:
   - `suggest_emergency_mode`: `true` **hanya** jika pengguna sudah mentransfer uang atau sudah membagikan OTP/PIN/kata sandi. Bukti teknis tidak memengaruhi nilai ini.
 - Menolak permintaan di luar pemeriksaan penipuan dan tahan terhadap *prompt injection* di dalam pesan.
 
-#### 3. If-Else (Conditional Router)
+#### 5. If-Else (Router Darurat)
 Mencocokkan draft JSON dengan regex `(?is).*suggest_emergency_mode"?\s*:\s*true`:
 - **True** → jalur darurat (Emergency Writer).
 - **False** → jalur standar (Safety Guard).
 
-#### 4. Agent Emergency Writer (jalur darurat)
+#### 6. Agent Emergency Writer & Google Docs Integration (jalur darurat)
 - Model: `nvidia/nemotron-3-ultra-550b-a55b:free`.
+- **Integrasi Tool GoogleDocs (Composio)**: Otomatis memanggil tool `googledocs_create_document` untuk membuat draf laporan insiden lengkap dan siap pakai di Google Docs dengan format nomor referensi unik (`GH-[YYYYMMDD]-[4_KARAKTER]`).
 - Menulis panduan tenang dan berurutan, ramah lansia, dengan format:
   - `DARURAT: LANGKAH CEPAT`, jenis penipuan, tingkat bahaya
-  - 3–6 langkah prioritas (langkah pertama dipilih berdasarkan cerita pengguna: uang terkirim / kode terbagi / belum jelas)
+  - 3–6 langkah prioritas (langkah pertama disesuaikan dengan situasi: uang terkirim / kode terbagi / belum jelas)
   - **Naskah telepon ke bank** (siap dibaca)
   - **Ringkasan laporan IASC** (siap salin)
+  - **Dokumen laporan (Google Docs)**: Tautan URL dokumen laporan resmi siap cetak untuk dibawa ke bank atau kepolisian
   - Daftar data yang masih perlu diisi (`[isi di sini]`)
 
-#### 5. Agent Safety Guard (jalur standar)
+#### 7. Agent Safety Guard (jalur standar)
 - Model: `nvidia/nemotron-3-ultra-550b-a55b:free`.
 - Mengubah draft JSON menjadi pesan teks sederhana: jenis, tingkat bahaya, tingkat keyakinan, alasan, dan langkah yang perlu dilakukan.
 - Untuk risiko **SEDANG/TINGGI**, menambahkan ringkasan singkat untuk laporan.
@@ -101,9 +118,6 @@ Mencocokkan draft JSON dengan regex `(?is).*suggest_emergency_mode"?\s*:\s*true`
 
 > [!NOTE]
 > Prompt Safety Guard menyebut input `PESAN DARI PENGGUNA`, tetapi Prompt Template di jalur ini saat ini hanya mengirim `{draft}` dan `{evidence}`. Hubungkan Chat Input ke template tersebut jika ingin Safety Guard juga membaca pesan asli.
-
-> [!NOTE]
-> Flow ini juga berisi node **Run Flow** yang menunjuk ke *Golden Hour - Scam Scenario Game*, tetapi node tersebut **belum tersambung** ke komponen lain.
 
 ---
 
@@ -119,6 +133,7 @@ flowchart LR
 
 ### Cara Kerja Engine
 - **Deterministik**: skor, pengacakan pilihan, dan kunci jawaban dihitung di kode. Tidak ada LLM, jadi tidak ada kunci jawaban di prompt.
+- **Pemicu Masukan Fleksibel**: Mendukung input bahasa alami di awal percakapan (seperti *"aku mau ngegame dong"*, *"main game"*, *"simulasi"*, *"kuis"*) untuk langsung membuka menu, serta mendukung pemilihan skenario menggunakan angka (`1`, `2`, `3`) maupun kata kunci (`bank`, `job`, `apk`).
 - **3 langkah per skenario**, masing-masing dengan 4 pilihan (**A–D**) yang **diacak** setiap giliran.
 - **Penilaian** (skor maksimal 30):
 
@@ -139,17 +154,17 @@ flowchart LR
 
 | Perintah | Judul | Peran | Saldo Awal | Modus |
 |---|---|---|---|---|
-| `bank` | Telepon dari CS Bank | Rina, 29 th | Rp15.000.000 | "CS bank" via WA pribadi, permintaan OTP, transfer ke "rekening aman" |
-| `job` | Tawaran Kerja Online | Dimas, 22 th | Rp1.000.000 | Kerja *review* produk, pindah ke Telegram, *top up* tugas VIP, biaya verifikasi |
-| `apk` | Undangan Pernikahan APK | Bu Sari, 52 th | Rp10.000.000 | File undangan `.apk`, izin SMS & sumber tidak dikenal, permintaan foto KTP |
+| `bank` / `1` | Telepon dari CS Bank | Rina, 29 th | Rp15.000.000 | "CS bank" via WA pribadi, permintaan OTP, transfer ke "rekening aman" |
+| `job` / `2` | Tawaran Kerja Online | Dimas, 22 th | Rp1.000.000 | Kerja *review* produk, pindah ke Telegram, *top up* tugas VIP, biaya verifikasi |
+| `apk` / `3` | Undangan Pernikahan APK | Bu Sari, 52 th | Rp10.000.000 | File undangan `.apk`, izin SMS & sumber tidak dikenal, permintaan foto KTP |
 
 ### Perintah
 
 | Perintah | Fungsi |
 |---|---|
-| `menu` / `mulai` / `ulang` / `restart` | Tampilkan menu dan reset permainan. |
-| `bank` / `job` / `apk` | Mulai skenario. |
-| `A` / `B` / `C` / `D` | Pilih jawaban (juga bisa `pilih a`, `jawab b`, `c.`, `d)`). |
+| `menu` / `mulai` / `ulang` / `restart` | Tampilkan menu dan reset permainan (bisa juga via kalimat santai seperti *"aku mau ngegame dong"*). |
+| `bank` / `job` / `apk` (atau angka `1` / `2` / `3`) | Mulai skenario pilihan. |
+| `A` / `B` / `C` / `D` | Pilih jawaban kuis (juga bisa `pilih a`, `jawab b`, `c.`, `d)`). |
 
 ---
 
@@ -157,20 +172,22 @@ flowchart LR
 
 ### Prasyarat
 1. **Langflow** (diuji pada versi **1.12.2**).
-2. **API Key [OpenRouter](https://openrouter.ai/)** untuk flow *Scam Check*.
-3. Koneksi internet (untuk OpenRouter, RDAP, dan penguraian *shortlink*).
+2. **API Key [OpenRouter](https://openrouter.ai/)** untuk menjalankan model Agent LLM.
+3. **Akun & API Key [Composio](https://composio.dev)** yang terhubung dengan akun Google Docs (untuk fitur pembuatan dokumen laporan resmi otomatis).
+4. Koneksi internet aktif (untuk OpenRouter, Composio, RDAP, dan penguraian *shortlink*).
 
 ### Langkah
 1. Buka Langflow (umumnya `http://localhost:7860`).
 2. Impor kedua file JSON lewat menu **Upload / Import**.
-3. Buat **Global Variable** bernama `OPENROUTERAPI_BACKUP1` berisi API key OpenRouter.
-   - Ketiga node OpenRouter di flow *Scam Check* membaca kolom **API Key** dari variabel ini.
-   - Alternatifnya, isi kolom **API Key** di setiap node OpenRouter secara manual.
-4. *(Opsional)* Ganti model di node OpenRouter sesuai kebutuhan.
-5. Buka **Playground** untuk mencoba flow.
+3. Di Langflow **Settings $\rightarrow$ Global Variables**, buat variabel:
+   - `OPENROUTERAPI_BACKUP1`: Berisi API Key OpenRouter Anda.
+   - `COMPOSIO_API_KEY`: Berisi API Key Composio Anda.
+4. Pada node **GoogleDocs** (Composio), klik tautan **Auth Link / Connect** untuk menghubungkan akun Google Docs Anda ke entity `default`.
+5. *(Opsional)* Sesuaikan model LLM di node OpenRouter sesuai preferensi.
+6. Buka **Playground** untuk mencoba flow.
 
 > [!TIP]
-> Flow *Scenario Game* tidak butuh API key karena tidak memakai LLM.
+> Alur simulasi game (*Scenario Game*) dapat dijalankan langsung mandiri tanpa API Key, atau dipanggil secara otomatis dari dalam alur *Scam Check* saat pengguna mengetik perintah game.
 
 ---
 
@@ -182,6 +199,9 @@ flowchart LR
 **Jalur darurat** (uang sudah terkirim / kode sudah dibagikan):
 > Tolong, tadi saya ditelepon orang yang mengaku dari bank, lalu saya transfer Rp5.000.000 ke rekening yang dia berikan. Sekarang nomornya tidak aktif. Apa yang harus saya lakukan?
 
+**Jalur game simulasi** (dari dalam flow yang sama):
+> aku mau ngegame dong
+
 ---
 
 ## 🔒 Prinsip Keamanan
@@ -190,7 +210,7 @@ flowchart LR
 2. **Situs mencurigakan tidak pernah dihubungi** oleh Evidence Scanner.
 3. **Tidak pernah meminta** OTP, PIN, kata sandi, atau CVV, dan selalu mengingatkan pengguna untuk tidak membagikannya.
 4. **Hanya kanal resmi**: IASC (`iasc.ojk.go.id`), OJK `157`, dan nomor resmi bank/e-wallet dari belakang kartu atau aplikasi resmi.
-5. **Penyamaran nomor**: nomor telepon/rekening/kartu/KTP hanya ditampilkan 3 digit terakhir (kecuali di naskah bank dan ringkasan IASC pada mode darurat).
+5. **Penyamaran nomor**: nomor telepon/rekening/kartu/KTP hanya ditampilkan 3 digit terakhir (kecuali di naskah bank, ringkasan IASC, dan draf laporan resmi pada mode darurat).
 6. **Tahan *prompt injection***: isi pesan pengguna dan bukti teknis diperlakukan sebagai data, bukan instruksi.
 7. **Penafian**: Golden Hour membantu menyiapkan laporan. Ini bukan nasihat hukum dan tidak menjamin dana kembali.
 8. **Game**: semua nama dan nomor dalam skenario adalah fiktif.
@@ -199,31 +219,29 @@ flowchart LR
 
 ## 🧭 Saran Pengembangan
 
-### Perbaikan Flow yang Ada
-- **Sambungkan Chat Input ke template Safety Guard.** Prompt Safety Guard butuh `PESAN DARI PENGGUNA`, tetapi template-nya belum menerima pesan asli.
-- **Sambungkan atau hapus node Run Flow** di flow *Scam Check* yang saat ini tidak terhubung.
+### Perbaikan Flow
+- **Sambungkan Chat Input ke template Safety Guard.** Prompt Safety Guard butuh `PESAN DARI PENGGUNA`, tetapi template-nya saat ini hanya menerima `{draft}` dan `{evidence}`.
 - **Ganti router regex dengan parsing JSON.** Regex `suggest_emergency_mode` bisa gagal jika format output LLM sedikit berubah. Komponen kecil yang mem-*parse* JSON (dengan *fallback* ke jalur darurat saat ragu) akan lebih andal.
-- **Pisahkan API key per node** dan siapkan model cadangan. Model `:free` di OpenRouter punya batas pemakaian, jadi perlu *fallback* jika model utama penuh.
+- **Pisahkan API key per node** dan siapkan model cadangan jika kuota model gratis OpenRouter mencapai batas.
 
 ### Evidence Scanner
-- **Perluas daftar `SHORTENERS` dan `OFFICIAL_DOMAINS`.** Kode sendiri menandai daftar ini masih pendek. Tambahkan bank, e-wallet, kurir, marketplace, dan instansi lain yang sering dicatut.
-- **Deteksi nama mirip (*typosquatting*)** dengan jarak edit, misalnya `bca` vs `bcca` atau `rn` vs `m`.
+- **Perluas daftar `SHORTENERS` dan `OFFICIAL_DOMAINS`.** Tambahkan lebih banyak bank, e-wallet, kurir, marketplace, dan instansi lain yang sering dicatut penipu.
+- **Deteksi nama mirip (*typosquatting*)** dengan algoritma jarak edit (misalnya `bca` vs `bcca` atau `rn` vs `m`).
 - **Integrasi sumber reputasi tautan** seperti Google Safe Browsing atau URLhaus, tetap tanpa mengunjungi situs mencurigakan.
 - **Cek nomor telepon dan rekening** ke basis data laporan penipuan, jika tersedia API resmi.
 
 ### Input dan Kanal
-- **Dukungan tangkapan layar.** Tambahkan OCR atau pakai model multimodal agar gambar chat bisa dianalisis.
-- **Integrasi Telegram** lewat API Langflow, karena kanal ini paling sering dipakai penipu dan korban.
-- **Output suara (*text-to-speech*)** untuk pengguna lansia yang kesulitan membaca teks panjang.
+- **Dukungan tangkapan layar.** Tambahkan OCR atau pakai model multimodal agar gambar chat bukti penipuan bisa dianalisis langsung.
+- **Integrasi WhatsApp/Telegram** lewat API Langflow, karena kanal ini paling sering dipakai penipu dan korban di Indonesia.
+- **Output suara (*text-to-speech*)** untuk mempermudah korban atau pengguna lansia yang sedang panik.
 
 ### Scenario Game
-- **Tambah skenario** sesuai jenis penipuan di Scam Check: investasi bodong, jual beli online, hadiah palsu, akun teman diretas, dan modus *romance scam*.
-- **Pindahkan penyimpanan sesi** dari file temp ke database (AstraDB) agar aman saat dijalankan di banyak server.
-- **Hubungkan game dengan Scam Check**, misalnya menawarkan skenario latihan yang sesuai setelah pengguna memeriksa pesan.
+- **Tambah skenario baru** sesuai jenis penipuan di Scam Check: investasi bodong, jual beli online, hadiah palsu, akun teman diretas, dan modus *romance scam*.
+- **Pindahkan penyimpanan sesi** dari file temp ke database (SQLite/Redis) agar aman saat dijalankan di server multi-user.
+- **Dukungan bahasa daerah** (Jawa, Sunda, dll.) untuk menjangkau masyarakat lebih luas.
 
 ### Kualitas dan Pemeliharaan
-- **Simpan kode custom component sebagai file `.py` terpisah** di repositori agar perubahan mudah dilacak lewat Git.
+- **Simpan kode custom component sebagai file `.py` terpisah** di repositori agar perubahan mudah dilacak lewat Git (sudah dimulai dengan `golden_hour_engine.py`).
 - **Unit test untuk Evidence Scanner** (ekstraksi tautan, *defang*, deteksi merek, parsing RDAP).
 - **Dataset evaluasi** berisi contoh pesan penipuan dan pesan normal untuk mengukur akurasi klasifikasi dan ketepatan jalur darurat.
 - **Masking data sensitif di log** Langflow, karena pesan pengguna bisa berisi nomor rekening atau data pribadi.
-
