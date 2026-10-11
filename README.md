@@ -153,7 +153,7 @@ flowchart LR
 
 ---
 
-## 🚀 Cara Menggunakan
+## 🚀 Cara Memulai
 
 ### Prasyarat
 1. **Langflow** (diuji pada versi **1.12.2**).
@@ -194,3 +194,37 @@ flowchart LR
 6. **Tahan *prompt injection***: isi pesan pengguna dan bukti teknis diperlakukan sebagai data, bukan instruksi.
 7. **Penafian**: Golden Hour membantu menyiapkan laporan. Ini bukan nasihat hukum dan tidak menjamin dana kembali.
 8. **Game**: semua nama dan nomor dalam skenario adalah fiktif.
+
+---
+
+## 🧭 Saran Pengembangan
+
+### Perbaikan Flow yang Ada
+- **Sambungkan Chat Input ke template Safety Guard.** Prompt Safety Guard butuh `PESAN DARI PENGGUNA`, tetapi template-nya belum menerima pesan asli.
+- **Sambungkan atau hapus node Run Flow** di flow *Scam Check* yang saat ini tidak terhubung.
+- **Ganti router regex dengan parsing JSON.** Regex `suggest_emergency_mode` bisa gagal jika format output LLM sedikit berubah. Komponen kecil yang mem-*parse* JSON (dengan *fallback* ke jalur darurat saat ragu) akan lebih andal.
+- **Pisahkan API key per node** dan siapkan model cadangan. Model `:free` di OpenRouter punya batas pemakaian, jadi perlu *fallback* jika model utama penuh.
+
+### Evidence Scanner
+- **Perluas daftar `SHORTENERS` dan `OFFICIAL_DOMAINS`.** Kode sendiri menandai daftar ini masih pendek. Tambahkan bank, e-wallet, kurir, marketplace, dan instansi lain yang sering dicatut.
+- **Deteksi nama mirip (*typosquatting*)** dengan jarak edit, misalnya `bca` vs `bcca` atau `rn` vs `m`.
+- **Integrasi sumber reputasi tautan** seperti Google Safe Browsing atau URLhaus, tetap tanpa mengunjungi situs mencurigakan.
+- **Cek nomor telepon dan rekening** ke basis data laporan penipuan, jika tersedia API resmi.
+
+### Input dan Kanal
+- **Dukungan tangkapan layar.** Tambahkan OCR atau pakai model multimodal agar gambar chat bisa dianalisis.
+- **Integrasi WhatsApp/Telegram** lewat API Langflow, karena kanal ini paling sering dipakai penipu dan korban.
+- **Output suara (*text-to-speech*)** untuk pengguna lansia yang kesulitan membaca teks panjang.
+
+### Scenario Game
+- **Tambah skenario** sesuai jenis penipuan di Scam Check: investasi bodong, jual beli online, hadiah palsu, akun teman diretas, dan modus *romance scam*.
+- **Pindahkan penyimpanan sesi** dari file temp ke database (SQLite/Redis) agar aman saat dijalankan di banyak server.
+- **Dukungan bahasa daerah** (Jawa, Sunda, dll.) untuk menjangkau lebih banyak pengguna.
+- **Hubungkan game dengan Scam Check**, misalnya menawarkan skenario latihan yang sesuai setelah pengguna memeriksa pesan.
+
+### Kualitas dan Pemeliharaan
+- **Simpan kode custom component sebagai file `.py` terpisah** di repositori agar perubahan mudah dilacak lewat Git.
+- **Unit test untuk Evidence Scanner** (ekstraksi tautan, *defang*, deteksi merek, parsing RDAP).
+- **Dataset evaluasi** berisi contoh pesan penipuan dan pesan normal untuk mengukur akurasi klasifikasi dan ketepatan jalur darurat.
+- **Masking data sensitif di log** Langflow, karena pesan pengguna bisa berisi nomor rekening atau data pribadi.
+
