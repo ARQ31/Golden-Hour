@@ -238,7 +238,6 @@ flowchart LR
 ### Scenario Game
 - **Tambah skenario baru** sesuai jenis penipuan di Scam Check: investasi bodong, jual beli online, hadiah palsu, akun teman diretas, dan modus *romance scam*.
 - **Pindahkan penyimpanan sesi** dari file temp ke database (SQLite/Redis) agar aman saat dijalankan di server multi-user.
-- **Dukungan bahasa daerah** (Jawa, Sunda, dll.) untuk menjangkau masyarakat lebih luas.
 
 ### Kualitas dan Pemeliharaan
 - **Simpan kode custom component sebagai file `.py` terpisah** di repositori agar perubahan mudah dilacak lewat Git (sudah dimulai dengan `golden_hour_engine.py`).
