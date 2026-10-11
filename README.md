@@ -218,8 +218,7 @@ flowchart LR
 
 ### Scenario Game
 - **Tambah skenario** sesuai jenis penipuan di Scam Check: investasi bodong, jual beli online, hadiah palsu, akun teman diretas, dan modus *romance scam*.
-- **Pindahkan penyimpanan sesi** dari file temp ke database (SQLite/Redis) agar aman saat dijalankan di banyak server.
-- **Dukungan bahasa daerah** (Jawa, Sunda, dll.) untuk menjangkau lebih banyak pengguna.
+- **Pindahkan penyimpanan sesi** dari file temp ke database (AstraDB) agar aman saat dijalankan di banyak server.
 - **Hubungkan game dengan Scam Check**, misalnya menawarkan skenario latihan yang sesuai setelah pengguna memeriksa pesan.
 
 ### Kualitas dan Pemeliharaan
