@@ -214,6 +214,42 @@ flowchart LR
 
 ---
 
+## 🤖 Integrasi IBM Bob (MCP)
+
+Golden Hour dapat digunakan langsung dari **[IBM Bob](https://www.ibm.com/products/bob)** via **Model Context Protocol (MCP)**, sehingga pengguna bisa bermain game, memeriksa pesan mencurigakan, dan mendapat panduan darurat langsung dari chat Bob — tanpa membuka Langflow.
+
+### Konfigurasi `.bob/mcp.json`
+
+```json
+{
+  "mcpServers": {
+    "lf-golden_hour": {
+      "type": "streamable-http",
+      "url": "http://127.0.0.1:7860/api/v1/mcp/project/<PROJECT_ID>/streamable",
+      "headers": {
+        "x-api-key": "<LANGFLOW_API_KEY>"
+      },
+      "timeout": 180000
+    }
+  }
+}
+```
+
+| Field | Keterangan |
+|---|---|
+| `type` | Gunakan `streamable-http` — transport native Bob, tanpa perlu `mcp-proxy`. |
+| `url` | URL project MCP Langflow. Ganti `<PROJECT_ID>` dengan ID project dari Langflow (`Settings → API`). |
+| `headers` | API key Langflow. Ganti `<LANGFLOW_API_KEY>` dengan key yang dibuat di Langflow (`Settings → API Keys`). |
+| `timeout` | Timeout dalam **milidetik**. Nilai `180000` = 3 menit — diperlukan karena flow darurat menjalankan LLM + Google Docs secara serial. |
+
+> [!IMPORTANT]
+> Gunakan `type: streamable-http` + `url` langsung (bukan `command` + `mcp-proxy`). Pendekatan native ini lebih stabil dan mendukung timeout panjang yang dibutuhkan Agent Emergency Writer.
+
+> [!TIP]
+> Pastikan model LLM di node **Agent Emergency Writer** menggunakan model yang cepat (disarankan: `gemini-2.0-flash` via Google AI Studio, atau `llama-3.1-8b-instant` via Groq). Model besar dari free tier OpenRouter/Nvidia bisa menyebabkan timeout bahkan dengan konfigurasi di atas.
+
+---
+
 ## 💬 Contoh Penggunaan Scam Check
 
 **Jalur standar** (belum ada kerugian):
