@@ -10,7 +10,7 @@ Nama *Golden Hour* merujuk pada waktu paling kritis sesaat sebelum atau tepat se
 
 | File | Fungsi | Pendekatan |
 |---|---|---|
-| `Golden Hour - Scam Check.json` | Memeriksa pesan mencurigakan, memindai tautan/file, lalu memberi analisis risiko atau panduan darurat beserta draf laporan IASC. | Multi-Agent LLM (OpenRouter) + Evidence Scanner (Python, tanpa AI) |
+| `Golden Hour - Scam Check.json` | Memeriksa pesan mencurigakan, memindai tautan/file, lalu memberi analisis risiko atau panduan darurat beserta draf laporan IASC. | Multi-Agent LLM (Flaz.id) + Evidence Scanner (Python, tanpa AI) |
 | `Golden Hour - Scam Scenario Game.json` | Game simulasi *Live Scam Attack* berbasis giliran untuk melatih pengguna mengenali modus penipuan. | 100% Python deterministik, tanpa LLM |
 
 > Kedua flow diekspor dari **Langflow 1.12.2**.
@@ -32,7 +32,7 @@ flowchart TD
     RouterGame -->|"False (Pemeriksaan)"| PT1["Prompt Template: PESAN PENGGUNA + BUKTI"]
     ES --> PT1
 
-    PT1 --> AA["Agent Analyst (nemotron-3-super-120b)"]
+    PT1 --> AA["Agent Analyst (GPT 4.1 Nano)"]
     AA -->|"draft JSON"| IF{"If-Else (regex suggest_emergency_mode: true)"}
 
     IF -->|"True"| PTE["Prompt Template: PESAN + HASIL ANALISIS AWAL + BUKTI"]
@@ -42,9 +42,9 @@ flowchart TD
     ES -.-> PTE
     ES -.-> PTS
 
-    Composio["GoogleDocs (Composio Tool)"] -->|"tool"| AEW["Agent Emergency Writer (nemotron-3-ultra-550b)"]
+    Composio["GoogleDocs (Composio Tool)"] -->|"tool"| AEW["Agent Emergency Writer (Deepseek-V4-Flash)"]
     PTE --> AEW
-    PTS --> ASG["Agent Safety Guard (nemotron-3-ultra-550b)"]
+    PTS --> ASG["Agent Safety Guard (GPT 4.1 Nano)"]
 
     AEW --> CO1(["Chat Output: Mode Darurat + Link Docs"])
     ASG --> CO2(["Chat Output: Hasil Pemeriksaan"])
@@ -86,7 +86,7 @@ Desain keamanannya:
 - "Tidak ada temuan" **tidak pernah** berarti pesan aman.
 
 #### 4. Agent Analyst
-- Model: `nvidia/nemotron-3-super-120b-a12b:free` (OpenRouter).
+- Model: `GPT 4.1 Nano` (flaz.id).
 - Menerima pesan pengguna + `BUKTI TEKNIS`, lalu mengembalikan **JSON saja** dengan kunci:
   - `scam_type`: `fake_call`, `investment_scam`, `job_scam`, `online_shop_scam`, `social_media_scam`, `phishing_apk`, `unknown`, `not_scam`
   - `risk_level`: `low`, `medium`, `high`
@@ -100,7 +100,7 @@ Mencocokkan draft JSON dengan regex `(?is).*suggest_emergency_mode"?\s*:\s*true`
 - **False** → jalur standar (Safety Guard).
 
 #### 6. Agent Emergency Writer & Google Docs Integration (jalur darurat)
-- Model: `nvidia/nemotron-3-ultra-550b-a55b:free`.
+- Model: `Deepseek-V4-Flash`.
 - **Integrasi Tool GoogleDocs (Composio)**: Otomatis memanggil tool `googledocs_create_document` untuk membuat draf laporan insiden lengkap dan siap pakai di Google Docs dengan format nomor referensi unik (`GH-[YYYYMMDD]-[4_KARAKTER]`).
 - Menulis panduan tenang dan berurutan, ramah lansia, dengan format:
   - `DARURAT: LANGKAH CEPAT`, jenis penipuan, tingkat bahaya
@@ -111,7 +111,7 @@ Mencocokkan draft JSON dengan regex `(?is).*suggest_emergency_mode"?\s*:\s*true`
   - Daftar data yang masih perlu diisi (`[isi di sini]`)
 
 #### 7. Agent Safety Guard (jalur standar)
-- Model: `nvidia/nemotron-3-ultra-550b-a55b:free`.
+- Model: `GPT 4.1 Nano`.
 - Mengubah draft JSON menjadi pesan teks sederhana: jenis, tingkat bahaya, tingkat keyakinan, alasan, dan langkah yang perlu dilakukan.
 - Untuk risiko **SEDANG/TINGGI**, menambahkan ringkasan singkat untuk laporan.
 - Memakai *safe answer* jika draft tidak valid atau berisi instruksi mencurigakan.
@@ -195,18 +195,18 @@ flowchart LR
 
 ### Prasyarat
 1. **Langflow** (diuji pada versi **1.12.2**).
-2. **API Key [OpenRouter](https://openrouter.ai/)** untuk menjalankan model Agent LLM.
+2. **API Key [Flaz.id](https://flaz.id/ai)** untuk menjalankan model Agent LLM.
 3. **Akun & API Key [Composio](https://composio.dev)** yang terhubung dengan akun Google Docs (untuk fitur pembuatan dokumen laporan resmi otomatis).
-4. Koneksi internet aktif (untuk OpenRouter, Composio, RDAP, dan penguraian *shortlink*).
+4. Koneksi internet aktif (untuk Flaz.id, Composio, RDAP, dan penguraian *shortlink*).
 
 ### Langkah
 1. Buka Langflow (umumnya `http://localhost:7860`).
 2. Impor kedua file JSON lewat menu **Upload / Import**.
 3. Di Langflow **Settings $\rightarrow$ Global Variables**, buat variabel:
-   - `OPENROUTERAPI_BACKUP1`: Berisi API Key OpenRouter Anda.
-   - `COMPOSIO_API_KEY`: Berisi API Key Composio Anda.
+   - `Flaz.id API`: Berisi API Key Flaz.id(bisa juga memakai model provider lain).
+   - `COMPOSIO_API_KEY`: Berisi API Key Composio.
 4. Pada node **GoogleDocs** (Composio), klik tautan **Auth Link / Connect** untuk menghubungkan akun Google Docs Anda ke entity `default`.
-5. *(Opsional)* Sesuaikan model LLM di node OpenRouter sesuai preferensi.
+5. *(Opsional)* Sesuaikan model LLM di node Flaz.id sesuai preferensi.
 6. Buka **Playground** untuk mencoba flow.
 
 > [!TIP]
@@ -246,7 +246,7 @@ Golden Hour dapat digunakan langsung dari **[IBM Bob](https://www.ibm.com/produc
 > Gunakan `type: streamable-http` + `url` langsung (bukan `command` + `mcp-proxy`). Pendekatan native ini lebih stabil dan mendukung timeout panjang yang dibutuhkan Agent Emergency Writer.
 
 > [!TIP]
-> Pastikan model LLM di node **Agent Emergency Writer** menggunakan model yang cepat (disarankan: `gemini-2.0-flash` via Google AI Studio, atau `llama-3.1-8b-instant` via Groq). Model besar dari free tier OpenRouter/Nvidia bisa menyebabkan timeout bahkan dengan konfigurasi di atas.
+> Pastikan model LLM di node **Agent Emergency Writer** menggunakan model yang cepat (disarankan: `gemini-2.5-flash` via Google AI Studio, atau `llama-3.1-8b-instant` via Groq).
 
 ---
 
@@ -281,7 +281,6 @@ Golden Hour dapat digunakan langsung dari **[IBM Bob](https://www.ibm.com/produc
 ### Perbaikan Flow
 - **Sambungkan Chat Input ke template Safety Guard.** Prompt Safety Guard butuh `PESAN DARI PENGGUNA`, tetapi template-nya saat ini hanya menerima `{draft}` dan `{evidence}`.
 - **Ganti router regex dengan parsing JSON.** Regex `suggest_emergency_mode` bisa gagal jika format output LLM sedikit berubah. Komponen kecil yang mem-*parse* JSON (dengan *fallback* ke jalur darurat saat ragu) akan lebih andal.
-- **Pisahkan API key per node** dan siapkan model cadangan jika kuota model gratis OpenRouter mencapai batas.
 
 ### Evidence Scanner
 - **Perluas daftar `SHORTENERS` dan `OFFICIAL_DOMAINS`.** Tambahkan lebih banyak bank, e-wallet, kurir, marketplace, dan instansi lain yang sering dicatut penipu.
