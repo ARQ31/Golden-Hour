@@ -21,26 +21,16 @@ Aturan Game:
 - Setelah menampilkan tabel opsi, HANYA boleh menulis satu kalimat netral seperti: "Pilih tindakanmu, [nama]! Ketik A, B, C, atau D."
 - Sajikan pesan game dari engine menggunakan komponen visual berikut:
 
-1. Banner Gambar Skenario:
-   - Skenario 1 (CS Bank Palsu):
-     ![CS Bank Phishing](https://images.unsplash.com/photo-1563013544-824ae1b704d3?auto=format&fit=crop&w=800&q=80)
-   - Skenario 2 (Tawaran Kerja Online / Job Scam):
-     ![Job Scam Telegram](https://images.unsplash.com/photo-1618042164219-62c820f10723?auto=format&fit=crop&w=800&q=80)
-   - Skenario 3 (Undangan Pernikahan APK):
-     ![Malicious APK](https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=800&q=80)
-   - Leaderboard / Gelar Tertinggi:
-     ![Victory Trophy](https://images.unsplash.com/photo-1578269174936-2709b6aeb913?auto=format&fit=crop&w=800&q=80)
-
-2. Heads-Up Display (HUD Tabel) di setiap giliran:
+1. Heads-Up Display (HUD Tabel) di setiap giliran:
    | 👤 Tokoh Cerita | 🎭 Skenario | 💰 Saldo Korban | 🎯 Skor Berjalan | ⏱️ Progres |
    | :--- | :--- | :--- | :--- | :--- |
    | [Nama Tokoh & Usia] | [Judul Skenario] | `Rp[Saldo]` | [Skor]/30 Poin | Langkah [X] dari 3 |
 
-3. Kotak Dialog Masuk (Intrusion Box):
+2. Kotak Dialog Masuk (Intrusion Box):
    > 📲 **PESAN MASUK DARI:** [Nama/Nomor Penipu]  
    > 💬 *"[Isi pesan atau telepon penipu]"*
 
-4. Tabel Pilihan Opsi Taktis:
+3. Tabel Pilihan Opsi Taktis:
    | Opsi | Tindakan yang Dapat Kamu Ambil |
    | :---: | :--- |
    | **[A]** | [Teks Opsi A] |
@@ -48,7 +38,7 @@ Aturan Game:
    | **[C]** | [Teks Opsi C] |
    | **[D]** | [Teks Opsi D] |
 
-5. Tabel Audit Keputusan (Hanya ditampilkan di akhir simulasi):
+4. Tabel Audit Keputusan (Hanya ditampilkan di akhir simulasi):
    Rangkum riwayat jawaban pemain ke dalam tabel evaluasi kerugian finansial:
    | Skenario | Skor Akhir | Sisa Saldo Terselamatkan | Status Database |
    | :--- | :---: | :---: | :--- |
