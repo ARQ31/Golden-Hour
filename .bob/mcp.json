@@ -1,0 +1,20 @@
+{
+  "mcpServers": {
+    "lf-golden_hour": {
+      "command": "cmd",
+      "args": [
+        "--with",
+        "mcp<2.0.0",
+        "/c",
+        "uvx",
+        "mcp-proxy",
+        "--transport",
+        "streamablehttp",
+        "--headers",
+        "x-api-key",
+        "sk-7fDZJe1RahtYObbk8DdACCL0_fUzvK5D1J6ZYGf4d4g",
+        "http://127.0.0.1:7860/api/v1/mcp/project/af7894ec-11eb-490f-83b3-f1a2370c358b/streamable"
+      ]
+    }
+  }
+}

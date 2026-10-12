@@ -183,6 +183,7 @@ flowchart LR
 | `menu` / `mulai` / `ulang` / `restart` | Tampilkan menu simulasi dan reset pilihan skenario aktif (tanpa menghapus nama pemain). |
 | `bank` / `job` / `apk` (atau `1` / `2` / `3`) | Langsung mulai skenario pilihan dengan profil pemain aktif tanpa perlu mengetik nama lagi. |
 | `bank [nama]` / `job [nama]` / `apk [nama]` | Mulai skenario pilihan sekaligus menetapkan nama pemain baru. |
+| `4` / `panduan` / `bantuan` / `help` | Tampilkan panduan lengkap cara bermain, mekanisme saldo cerita, dan aturan akumulasi skor. |
 | `ganti nama [nama_baru]` | Ganti profil pemain aktif di sesi saat ini. |
 | `A` / `B` / `C` / `D` | Pilih jawaban kuis (juga bisa `pilih a`, `jawab b`, `c.`, `d)` atau kutipan teks opsi). |
 | `leaderboard` / `top` / `peringkat` | Tampilkan 5 peringkat teratas dengan skor akumulasi (X/90 poin), progres skenario, dan posisi pemain aktif. |
@@ -260,9 +261,11 @@ flowchart LR
 ### Scenario Game
 - **Tambah skenario baru** sesuai jenis penipuan di Scam Check: investasi bodong, jual beli online, hadiah palsu, akun teman diretas, dan modus *romance scam*.
 - **Pindahkan penyimpanan sesi** dari file temp ke database (SQLite/Redis) agar aman saat dijalankan di server multi-user.
+- **Dukungan bahasa daerah** (Jawa, Sunda, dll.) untuk menjangkau masyarakat lebih luas.
 
 ### Kualitas dan Pemeliharaan
 - **Simpan kode custom component sebagai file `.py` terpisah** di repositori agar perubahan mudah dilacak lewat Git (sudah dimulai dengan `golden_hour_engine.py`).
 - **Unit test untuk Evidence Scanner** (ekstraksi tautan, *defang*, deteksi merek, parsing RDAP).
 - **Dataset evaluasi** berisi contoh pesan penipuan dan pesan normal untuk mengukur akurasi klasifikasi dan ketepatan jalur darurat.
 - **Masking data sensitif di log** Langflow, karena pesan pengguna bisa berisi nomor rekening atau data pribadi.
+
