@@ -11,7 +11,7 @@ Nama *Golden Hour* merujuk pada waktu paling kritis sesaat sebelum atau tepat se
 | File | Fungsi | Pendekatan |
 |---|---|---|
 | `Golden Hour - Scam Check.json` | Memeriksa pesan mencurigakan, memindai tautan/file, lalu memberi analisis risiko atau panduan darurat beserta draf laporan IASC. | Multi-Agent LLM (OpenRouter) + Evidence Scanner (Python, tanpa AI) |
-| `Golden Hour - Scam Scenario Game.json` | Game simulasi *Scam Scenario Game* berbasis giliran untuk melatih pengguna mengenali modus penipuan. | 100% Python deterministik, tanpa LLM |
+| `Golden Hour - Scam Scenario Game.json` | Game simulasi *Live Scam Attack* berbasis giliran untuk melatih pengguna mengenali modus penipuan. | 100% Python deterministik, tanpa LLM |
 
 > Kedua flow diekspor dari **Langflow 1.12.2**.
 
@@ -135,7 +135,7 @@ flowchart LR
 - **Deterministik**: skor, pengacakan pilihan, dan kunci jawaban dihitung di kode. Tidak ada LLM, jadi tidak ada kunci jawaban di prompt.
 - **Pemicu Masukan Fleksibel**: Mendukung input bahasa alami di awal percakapan (seperti *"aku mau ngegame dong"*, *"main game"*, *"simulasi"*, *"kuis"*) untuk langsung membuka menu, serta mendukung pemilihan skenario menggunakan angka (`1`, `2`, `3`) maupun kata kunci (`bank`, `job`, `apk`).
 - **3 langkah per skenario**, masing-masing dengan 4 pilihan (**A–D**) yang **diacak** setiap giliran.
-- **Penilaian** (skor maksimal 30):
+- **Penilaian per skenario** (skor maksimal 30 per skenario):
 
   | Nilai | Label | Poin |
   |---|---|---|
@@ -143,16 +143,34 @@ flowchart LR
   | `OK` | AMAN TAPI BELUM CUKUP | +5 |
   | `RISKY` | BERISIKO | 0 (dan saldo cerita berkurang) |
 
-- **Saldo cerita**: setiap tokoh punya saldo awal yang berkurang saat pemain memilih jawaban berisiko.
+- **Skor Terakumulasi (Papan Peringkat Profil Pemain)**:
+  - Total skor terakumulasi hingga **90 Poin** (3 skenario $\times$ 30 poin: `bank`, `job`, `apk`).
+  - Menyelesaikan skenario berbeda akan mengakumulasikan skor ke profil pemain yang sama.
+  - Mengulang skenario yang sama akan mengambil skor tertinggi (*best score*) tanpa duplikasi atau pengurangan nilai.
+- **Peringkat Kumulatif**:
+  - `Apex Untouchable` (90 Poin — Master Scam Buster 3/3 sempurna)
+  - `Scam Hunter` (60–89 Poin — Veteran 2/3 skenario)
+  - `Firewall Aegis` (30–59 Poin — Protector 1/3 skenario)
+  - `Alert Citizen` (<30 Poin — Waspada / Pemula)
+- **Saldo cerita**: setiap tokoh punya saldo awal yang berkurang saat pemain memilih jawaban berisiko. Total saldo terselamatkan juga diakumulasikan di profil pemain.
 - **Cerita bercabang**: pesan di langkah 2 dan 3 menyesuaikan jawaban sebelumnya.
 - **Feedback** setiap langkah: penjelasan, akibat, dan tanda bahaya yang perlu dikenali.
-- **Peringkat akhir**: `Apex Untouchable` (30), `Scam Hunter` (≥20), `Firewall Aegis` (≥10), `Alert Citizen` (<10), ditambah tips dunia nyata.
+- **Cloud Leaderboard & Telemetri Terakumulasi (Astra DB)**:
+  - Setiap pemain memiliki profil tunggal di **DataStax Astra DB** (collection `scam_game_records`) via Data API (`updateOne` / upsert).
+  - Kolom `score`, `rank`, `scenario`, dan `scenario_title` (contoh: `2/3 Skenario Selesai`) langsung terupdate mencerminkan skor akumulasi pemain tanpa record duplikat.
+  - Jika token Astra DB belum diisi, sistem otomatis menggunakan *graceful fallback* ke penyimpanan lokal (`golden_hour_leaderboard.json`).
+- **Registrasi & Identitas Pemain di Awal (Login Ringan)**:
+  - Pemain diminta memasukkan nama panggilan satu kali di awal sebelum menu dibuka (atau menyematkan nama langsung seperti `bank Zenith`).
+  - Identitas pemain diingat sepanjang sesi. Pemain dapat berpindah dan menyelesaikan skenario 1, 2, dan 3 secara beruntun tanpa pernah ditanya nama lagi.
+  - Jika pemain lama reconnect atau memasukkan nama yang sama, sistem otomatis memuat kembali profil skor akumulasinya dari Astra DB.
+  - Untuk berganti akun pemain di sesi yang sama, cukup ketik `ganti nama [nama_baru]`.
+- **Ketahanan Sesi MCP / Multi-Turn**: Menggunakan *active session adoption fallback* sehingga sesi permainan tidak putus saat dimainkan melalui IBM Bob atau MCP client lainnya.
 - **Status sesi** disimpan di file `golden_hour_state.json` pada folder temp sistem, kedaluwarsa setelah 2 jam.
-- **Opsi komponen**: `Format Output` (Markdown / Teks polos) dan `Session ID (opsional)` jika session ID dari Chat Input tidak stabil.
+- **Opsi komponen**: `Format Output` (Markdown / Teks polos), `Session ID (opsional)`, serta input kredensial `Astra DB Token`, `API Endpoint`, dan `Collection`.
 
 ### Skenario
 
-| Perintah | Judul | Peran | Saldo Awal | Modus |
+| Perintah | Judul | Peran Karakter | Saldo Awal | Modus |
 |---|---|---|---|---|
 | `bank` / `1` | Telepon dari CS Bank | Rina, 29 th | Rp15.000.000 | "CS bank" via WA pribadi, permintaan OTP, transfer ke "rekening aman" |
 | `job` / `2` | Tawaran Kerja Online | Dimas, 22 th | Rp1.000.000 | Kerja *review* produk, pindah ke Telegram, *top up* tugas VIP, biaya verifikasi |
@@ -162,9 +180,13 @@ flowchart LR
 
 | Perintah | Fungsi |
 |---|---|
-| `menu` / `mulai` / `ulang` / `restart` | Tampilkan menu dan reset permainan (bisa juga via kalimat santai seperti *"aku mau ngegame dong"*). |
-| `bank` / `job` / `apk` (atau angka `1` / `2` / `3`) | Mulai skenario pilihan. |
-| `A` / `B` / `C` / `D` | Pilih jawaban kuis (juga bisa `pilih a`, `jawab b`, `c.`, `d)`). |
+| `menu` / `mulai` / `ulang` / `restart` | Tampilkan menu simulasi dan reset pilihan skenario aktif (tanpa menghapus nama pemain). |
+| `bank` / `job` / `apk` (atau `1` / `2` / `3`) | Langsung mulai skenario pilihan dengan profil pemain aktif tanpa perlu mengetik nama lagi. |
+| `bank [nama]` / `job [nama]` / `apk [nama]` | Mulai skenario pilihan sekaligus menetapkan nama pemain baru. |
+| `ganti nama [nama_baru]` | Ganti profil pemain aktif di sesi saat ini. |
+| `A` / `B` / `C` / `D` | Pilih jawaban kuis (juga bisa `pilih a`, `jawab b`, `c.`, `d)` atau kutipan teks opsi). |
+| `leaderboard` / `top` / `peringkat` | Tampilkan 5 peringkat teratas dengan skor akumulasi (X/90 poin), progres skenario, dan posisi pemain aktif. |
+| `status` / `lanjut` | Pulihkan dan tampilkan kembali langkah permainan aktif jika koneksi sempat terputus. |
 
 ---
 
