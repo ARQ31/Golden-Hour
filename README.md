@@ -276,29 +276,39 @@ Golden Hour dapat digunakan langsung dari **[IBM Bob](https://www.ibm.com/produc
 
 ---
 
-## 🧭 Saran Pengembangan
+## 🧭 Pengembangan Lanjutan
 
-### Perbaikan Flow
+### 1. Interactive Emergency Checklist & Human-in-the-Loop (State-Aware Multi-Turn)
+*Mengubah respons darurat statis satu arah menjadi pendampingan krisis interaktif langkah-demi-langkah untuk mencegah kepanikan korban (panic paralysis).*
+- **Sistematika Dialog 4 Etape (Multi-Turn Protocol):**
+  - **Turn 1 (Isolasi & Penenang):** Memberikan instruksi atomik segera (mematikan data/WiFi untuk APK, blokir kartu/ganti PIN m-banking) dengan konfirmasi *Human-in-the-Loop* (`Sudah` / `Belum`).
+  - **Turn 2 (Kontak Bank & Pengumpulan Data Entitas):** Mengajukan pertanyaan terarah untuk mengekstrak nama bank korban, bank penipu, nomor rekening penampung, dan estimasi nominal secara alami dari percakapan.
+  - **Turn 3 (Naskah Telepon Call Center Siap Baca):** Menampilkan nomor hotline resmi bank dan naskah bicara taktis untuk menuntut pembekuan rekening penampung sesuai regulasi Golden Hour IASC OJK.
+  - **Turn 4 (Finalisasi Berkas Google Docs):** Mengirim seluruh entitas data yang terkumpul ke tool Composio Google Docs sehingga dokumen resmi untuk kepolisian/bank terisi 100% otomatis tanpa placeholder kosong `[isi di sini]`.
+- **Mekanisme State & Routing:** Menggunakan `Emergency State Router` (Custom Component Python) atau `Astra DB Chat Memory` dengan *Guided State Progression Rules* agar pengguna yang sedang berada di tengah checklist tidak terlempar keluar ke analisis pesan biasa.
+
+### 2. Perbaikan Flow & Arsitektur Agentic
 - **Sambungkan Chat Input ke template Safety Guard.** Prompt Safety Guard butuh `PESAN DARI PENGGUNA`, tetapi template-nya saat ini hanya menerima `{draft}` dan `{evidence}`.
 - **Ganti router regex dengan parsing JSON.** Regex `suggest_emergency_mode` bisa gagal jika format output LLM sedikit berubah. Komponen kecil yang mem-*parse* JSON (dengan *fallback* ke jalur darurat saat ragu) akan lebih andal.
+- **Dynamic Threat Intelligence via Astra DB Vector Search (RAG):** Mengintegrasikan koleksi vektor modus penipuan terkini dari OJK/Kominfo agar Agent Analyst memiliki referensi modus baru yang tidak ada pada bobot model dasar (*parametric memory*).
 
-### Evidence Scanner
-- **Perluas daftar `SHORTENERS` dan `OFFICIAL_DOMAINS`.** Tambahkan lebih banyak bank, e-wallet, kurir, marketplace, dan instansi lain yang sering dicatut penipu.
-- **Deteksi nama mirip (*typosquatting*)** dengan algoritma jarak edit (misalnya `bca` vs `bcca` atau `rn` vs `m`).
-- **Integrasi sumber reputasi tautan** seperti Google Safe Browsing atau URLhaus, tetap tanpa mengunjungi situs mencurigakan.
-- **Cek nomor telepon dan rekening** ke basis data laporan penipuan, jika tersedia API resmi.
+### 3. Evidence Scanner & Integrasi Ekosistem Lokal
+- **Verifikasi rekening & nomor telepon penipu:** Integrasi API/mockup basis data laporan penipuan lokal seperti format **CekRekening.id (Kominfo)** atau **Kredibel.co.id**.
+- **Perluas daftar `SHORTENERS` dan `OFFICIAL_DOMAINS`:** Tambahkan lebih banyak bank, e-wallet, kurir, marketplace, dan instansi lain yang sering dicatut penipu.
+- **Deteksi nama mirip (*typosquatting*):** Gunakan algoritma jarak edit (misalnya `bca` vs `bcca` atau `rn` vs `m`).
+- **Integrasi sumber reputasi tautan:** Manfaatkan feed intelijen seperti Google Safe Browsing atau URLhaus tanpa mengunjungi situs mencurigakan.
 
-### Input dan Kanal
-- **Dukungan tangkapan layar.** Tambahkan OCR atau pakai model multimodal agar gambar chat bukti penipuan bisa dianalisis langsung.
-- **Integrasi WhatsApp/Telegram** lewat API Langflow, karena kanal ini paling sering dipakai penipu dan korban di Indonesia.
-- **Output suara (*text-to-speech*)** untuk mempermudah korban atau pengguna lansia yang sedang panik.
+### 4. Input dan Kanal Multimodal
+- **Dukungan tangkapan layar (Vision/OCR):** Menerima gambar bukti transfer palsu atau screenshot chat WhatsApp menggunakan model multimodal (*Gemini 2.0 Flash / GPT-4o-mini Vision*).
+- **Integrasi WhatsApp/Telegram:** Mengintegrasikan flow ke bot perpesanan melalui API Langflow agar dapat diakses langsung oleh masyarakat.
+- **Output suara (*text-to-speech*):** Mempermudah korban atau pengguna lansia yang sedang panik agar dapat mendengarkan instruksi darurat.
 
-### Scenario Game
-- **Tambah skenario baru** sesuai jenis penipuan di Scam Check: investasi bodong, jual beli online, hadiah palsu, akun teman diretas, dan modus *romance scam*.
-- **Pindahkan penyimpanan sesi** dari file temp ke database (SQLite/Redis) agar aman saat dijalankan di server multi-user.
-- **Dukungan bahasa daerah** (Jawa, Sunda, dll.) untuk menjangkau masyarakat lebih luas.
+### 5. Scenario Game
+- **Tambah skenario baru:** Investasi bodong, jual beli online, hadiah palsu, akun teman diretas, dan modus *romance scam*.
+- **Pindahkan penyimpanan sesi:** Dari file temp ke database (SQLite/Redis/Astra DB) agar aman saat dijalankan di server multi-user.
+- **Dukungan bahasa daerah:** Bahasa Jawa, Sunda, dll. untuk menjangkau kelompok rentan yang lebih luas.
 
-### Kualitas dan Pemeliharaan
+### 6. Kualitas dan Pemeliharaan
 - **Simpan kode custom component sebagai file `.py` terpisah** di repositori agar perubahan mudah dilacak lewat Git (sudah dimulai dengan `golden_hour_engine.py`).
 - **Unit test untuk Evidence Scanner** (ekstraksi tautan, *defang*, deteksi merek, parsing RDAP).
 - **Dataset evaluasi** berisi contoh pesan penipuan dan pesan normal untuk mengukur akurasi klasifikasi dan ketepatan jalur darurat.
