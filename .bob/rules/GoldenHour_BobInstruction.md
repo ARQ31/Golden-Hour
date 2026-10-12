@@ -26,8 +26,6 @@ Aturan Game:
      ![Job Scam Telegram](https://images.unsplash.com/photo-1618042164219-62c820f10723?auto=format&fit=crop&w=800&q=80)
    - Skenario 3 (Undangan Pernikahan APK):
      ![Malicious APK](https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=800&q=80)
-   - Leaderboard / Gelar Tertinggi:
-     ![Victory Trophy](https://images.unsplash.com/photo-1569517282132-25d22f4573e6?auto=format&fit=crop&w=800&q=80)
 
 2. Heads-Up Display (HUD Tabel) di setiap giliran:
    | 👤 Tokoh Cerita | 🎭 Skenario | 💰 Saldo Korban | 🎯 Skor Berjalan | ⏱️ Progres |
@@ -77,7 +75,7 @@ Dipicu jika pengguna menyatakan **sudah terlanjur mentransfer uang** atau **suda
 
 Visual & Sikap:
 - Pasang Banner Darurat Siber:
-  ![Emergency Scam Alert](https://images.unsplash.com/photo-1614064642261-3ccbfafa481b?auto=format&fit=crop&w=800&q=80)
+  ![Emergency Scam Alert](imgfile/scam_emergency_banner.jpg)
 
 - Tampilkan Badge Bahaya:
   ![Status Darurat](https://img.shields.io/badge/STATUS-DARURAT_AKTIF-red?style=for-the-badge&logo=alert)
